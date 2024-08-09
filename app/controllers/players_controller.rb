@@ -3,11 +3,13 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    if params[:column].present?
-      @players = Player.includes(:team).order("#{params[:column]} #{params[:direction]}")
-    else
-      @players = Player.includes(:team).all
-    end
+    session['filters'] ||= {}
+    session['filters'].merge!(filter_params)
+
+    @players = Player.includes(:team)
+      .then { search_by_name _1 }
+      .then { filter_by_team _1 }
+      .then { apply_order _1 }
   end
 
   # GET /players/1 or /players/1.json
@@ -69,6 +71,22 @@ class PlayersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def player_params
-      params.require(:player).permit(:name, :team_id, :seasons)
+      params.require(:player).permit(:name, :column, :team_id, :seasons)
+    end
+
+    def filter_params
+      params.permit(:name, :column, :direction)
+    end
+
+    def search_by_name(scope)
+      session['filters']['name'].present? ? scope.where('players.name like ?', "%#{session['filters']['name']}%") : scope
+    end
+
+    def filter_by_team(scope)
+      session['filters']['team_id'].present? ? scope.where(team_id: session['filters']['team_id']) : scope
+    end
+
+    def apply_order(scope)
+      scope.order(session['filters'].slice('column', 'direction').values.join(' '))
     end
 end
