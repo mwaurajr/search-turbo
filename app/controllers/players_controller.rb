@@ -71,11 +71,11 @@ class PlayersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def player_params
-      params.require(:player).permit(:name, :column, :team_id, :seasons)
+      params.require(:player).permit(:name, :team_id, :seasons)
     end
 
     def filter_params
-      params.permit(:name, :column, :direction)
+      params.permit(:name, :team_id, :column, :direction)
     end
 
     def search_by_name(scope)
